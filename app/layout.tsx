@@ -59,10 +59,8 @@ export default function RootLayout({
     children: React.ReactNode;
 }>) {
     return (
-        <html lang="en" className={workSans.variable}>
-            <body
-                className='font-work-sans'
-            >
+        <html lang="en">
+            <body className={workSans.variable}>
                 {children}
             </body>
         </html>
