@@ -1,21 +1,16 @@
+import { IStartup } from "@/database/startup.model";
 import SearchForm from "../../components/SearchForm";
 import StartupCard from "@/components/StartupCard";
+
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL;
 
 const Home = async ({ searchParams }: {
     searchParams: Promise<{ query?: string }>
 }) => {
     const query = (await searchParams).query;
 
-    const posts = [{
-        _createdAt: new Date(),
-        views: 55,
-        author: { _id: 1, name: "Harry" },
-        _id: 1,
-        description: "This is a description.",
-        image: "https://i.ytimg.com/vi/kCU1GkGck20/hq720.jpg?sqp=-oaymwEhCK4FEIIDSFryq4qpAxMIARUAAAAAGAElAADIQj0AgKJD&rs=AOn4CLBdYzpfHIope5BKZBYD-XkgTMXTEQ",
-        category: "Robots",
-        title: "We Robots"
-    }];
+    const response = await fetch(`${BASE_URL}/api/startups`);
+    const { startups } = await response.json();
 
     return (
         <>
@@ -35,12 +30,12 @@ const Home = async ({ searchParams }: {
                 </p>
 
                 <ul className="mt-7 card_grid">
-                    {posts.length > 0 ? (
-                        posts.map((post: StartupCardType, index: number) => (
-                            <StartupCard key={post?._id} post={post} />
+                    {startups && startups.length > 0 ? (
+                        startups.map((post: IStartup, index: number) => (
+                            <StartupCard key={post?._id.toString()} post={post} />
                         ))
                     ) : (
-                        <p className="no-results">No startups found</p>
+                        <p className="no-results">No start ups found</p>
                     )}
                 </ul>
             </section>

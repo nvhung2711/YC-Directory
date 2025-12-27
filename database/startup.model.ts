@@ -11,6 +11,8 @@ export interface IStartup extends Document {
     category: string;
     image: string;
     pitch: string;
+    createdAt: Date;
+    updatedAt: Date;
 }
 
 const StartupSchema = new Schema<IStartup>({
@@ -69,6 +71,8 @@ const StartupSchema = new Schema<IStartup>({
     pitch: {
         type: String
     }
+}, {
+    timestamps: true
 });
 
 StartupSchema.pre('validate', function () {
