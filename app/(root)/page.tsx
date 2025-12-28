@@ -9,7 +9,7 @@ const Home = async ({ searchParams }: {
 }) => {
     const query = (await searchParams).query;
 
-    const response = await fetch(`${BASE_URL}/api/startups`);
+    const response = await fetch(`${BASE_URL}/api/startup`);
     const { startups } = await response.json();
 
     return (
@@ -31,7 +31,7 @@ const Home = async ({ searchParams }: {
 
                 <ul className="mt-7 card_grid">
                     {startups && startups.length > 0 ? (
-                        startups.map((post: IStartup, index: number) => (
+                        startups.map((post: IStartup) => (
                             <StartupCard key={post?._id.toString()} post={post} />
                         ))
                     ) : (

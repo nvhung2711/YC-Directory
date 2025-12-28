@@ -24,7 +24,8 @@ const StartupSchema = new Schema<IStartup>({
     title: {
         type: String,
         required: [true, "Title is required"],
-        trim: true
+        trim: true,
+        unique: true
     },
     author: {
         type: String,
@@ -98,6 +99,8 @@ function generateSlug(title: string): string {
 
     return `${base}-${suffix}`;
 }
+
+StartupSchema.index({ slug: 1 }, { unique: true });
 
 const Startup = models.StartupSchema || model<IStartup>("Startup", StartupSchema);
 
