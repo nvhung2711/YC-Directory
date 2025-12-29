@@ -1,16 +1,25 @@
-import { IStartup } from "@/database/startup.model";
 import SearchForm from "../../components/SearchForm";
+import { IStartup } from "@/database/startup.model";
 import StartupCard from "@/components/StartupCard";
 
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL;
+import { getStartups, getStartupsBySearch } from "@/lib/actions/startup.actions";
 
 const Home = async ({ searchParams }: {
     searchParams: Promise<{ query?: string }>
 }) => {
     const query = (await searchParams).query;
 
-    const response = await fetch(`${BASE_URL}/api/startup`);
-    const { startups } = await response.json();
+    let response;
+
+    if (!query) {
+        response = await getStartups();
+    } else {
+        response = await getStartupsBySearch(query as string);
+    }
+
+    if (response.status === "ERROR") throw new Error(response.error);
+
+    const startups = response.startups;
 
     return (
         <>

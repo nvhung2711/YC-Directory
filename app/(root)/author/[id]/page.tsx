@@ -1,24 +1,23 @@
 import { auth } from "@/auth";
 import { notFound } from "next/navigation";
 import Image from "next/image";
-import AuthorStartups from "@/components/AuthorStartups";
 import { Suspense } from "react";
-// import { Heading1 } from "lucide-react";
+
+import AuthorStartups from "@/components/AuthorStartups";
 import { StartupCardSkeleton } from "@/components/StartupCard";
-
-// export const experimental_ppr = true;
-
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL;
+import { getAuthorById } from "@/lib/actions/author.actions";
 
 const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
     const id = (await params).id;
     const session = await auth();
 
-    const response = await fetch(`${BASE_URL}/api/author/${id}`);
+    const response = await getAuthorById(id);
 
-    if (response.status === 404) return notFound();
+    if (response.status === "NOT FOUND") return notFound();
 
-    const { author, authorEmail } = await response.json();
+    if (response.status === "ERROR") throw new Error(response.error);
+
+    const { author } = response;
 
     return (
         <>
@@ -46,7 +45,7 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
 
                 < div className="flex-1 flex flex-col gap-5 lg:-mt-5" >
                     <p className="text-30-bold" >
-                        {session?.user?.email === authorEmail ? "Your" : "All"
+                        {session?.user?.email === author.email ? "Your" : "All"
                         } Startups
                     </p>
                     < ul className="card_grid-sm" >

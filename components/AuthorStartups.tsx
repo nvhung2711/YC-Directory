@@ -1,12 +1,13 @@
 import StartupCard from "@/components/StartupCard";
 import { IStartup } from "@/database/startup.model";
-
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL;
+import { getStartupsByAuthor } from "@/lib/actions/startup.actions";
 
 const AuthorStartups = async ({ id }: { id: string }) => {
-    const response = await fetch(`${BASE_URL}/api/author/${id}/startup`);
+    const response = await getStartupsByAuthor(id);
 
-    const { startups } = await response.json();
+    if (response.status === "ERROR") throw new Error(response.error);
+
+    const startups = response.startups as IStartup[];
 
     return (
         <>
