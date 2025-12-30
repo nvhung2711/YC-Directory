@@ -29,8 +29,6 @@ export async function createStartup(
     try {
         await connectDB();
 
-        console.log(data);
-
         //It is sure that users have to sign in to get to create a start up pitch
         const session = await auth();
 
@@ -57,6 +55,23 @@ export async function createStartup(
             image,
             pitch
         } = validation.data;
+
+        //Generate the slug and make sure there is no clash with other start ups
+        const slug = title
+            .toLowerCase()
+            .trim()
+            .replace(/[^a-z0-9\s-]/g, '') // Remove special characters
+            .replace(/\s+/g, '-') // Replace spaces with hyphens
+            .replace(/-+/g, '-') // Replace multiple hyphens with single hyphen
+            .replace(/^-|-$/g, ''); // Remove leading/trailing hyphens
+
+        const slugCheck = await getStartupsBySlug(slug);
+
+        if (slugCheck.status === "ERROR")
+            return { success: false, error: slugCheck.error!, errors: {} }
+
+        if (slugCheck.status === "SUCCESS")
+            return { success: false, error: "Please choose another title", errors: { title: "The title will clash with some other start ups' slug. Please choose another title" } }
 
         //Convert File -> Buffer for Cloudinary
         const arrayBuffer = await image.arrayBuffer();
@@ -147,6 +162,21 @@ export const getStartupsBySearch = async (query: string) => {
         await connectDB();
 
         const startups = await Startup.find({ title: { $regex: query, $options: "i" } });
+
+        if (!startups)
+            return { status: "NOT FOUND" }
+
+        return { status: "SUCCESS", startups: startups };
+    } catch (err) {
+        return { status: "ERROR", error: err instanceof Error ? err.message : "Unknown" }
+    }
+}
+
+export const getStartupsBySlug = async (slug: string) => {
+    try {
+        await connectDB();
+
+        const startups = await Startup.find({ slug: slug });
 
         if (!startups)
             return { status: "NOT FOUND" }

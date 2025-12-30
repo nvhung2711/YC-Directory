@@ -77,30 +77,6 @@ const StartupSchema = new Schema<IStartup>({
     timestamps: true
 });
 
-StartupSchema.pre('validate', function () {
-    const startup = this as IStartup;
-
-    // Generate slug only if title changed or document is new
-    if (startup.isModified('title') || startup.isNew) {
-        startup.slug = generateSlug(startup.title);
-    }
-});
-
-function generateSlug(title: string): string {
-    const base = title
-        .toLowerCase()
-        .trim()
-        .replace(/[^a-z0-9\s-]/g, '') // Remove special characters
-        .replace(/\s+/g, '-') // Replace spaces with hyphens
-        .replace(/-+/g, '-') // Replace multiple hyphens with single hyphen
-        .replace(/^-|-$/g, ''); // Remove leading/trailing hyphens
-
-    // 6 chars random suffix (letters+digits)
-    const suffix = Math.random().toString(36).slice(2, 8);
-
-    return `${base}-${suffix}`;
-}
-
 StartupSchema.index({ slug: 1 }, { unique: true });
 
 const Startup = models.StartupSchema || model<IStartup>("Startup", StartupSchema);

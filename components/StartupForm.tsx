@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Send } from "lucide-react";
-import { toast } from "sonner";
 import MDEditor from "@uiw/react-md-editor";
 
 import { formSchema } from "@/lib/validation";
@@ -47,14 +46,8 @@ const StartupForm = () => {
             }, 0);
         }
 
-        // Show error toast
-        if (state.error && !state.success) {
-            toast.error(state.error);
-        }
-
         // Show success toast and navigate
         if (state.success) {
-            toast.success("Startup created successfully!");
 
             // Navigate
             router.push('/');
