@@ -17,7 +17,7 @@ const Page = async ({ params }: { params: Promise<{ id: string }> }) => {
 
     if (response.status === "ERROR") throw new Error(response.error);
 
-    const { author } = response;
+    const author = response.authors[0];
 
     return (
         <>

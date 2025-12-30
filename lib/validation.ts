@@ -23,7 +23,7 @@ export const formSchema = z.object({
     image: z
         .instanceof(File, { message: "Please upload an image file" })
         .refine(
-            (file) => file.type.startsWith("image/"),
+            (file) => ["image/jpeg", "image/jpg", "image/png", "image/webp"].includes(file.type),
             { message: "File must be an image (PNG, JPG, WEBP, ...)" }
         ),
 

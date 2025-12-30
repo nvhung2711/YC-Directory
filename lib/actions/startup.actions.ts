@@ -1,46 +1,68 @@
 "use server";
 
+import { auth } from "@/auth";
 import mongoose from "mongoose";
-
 import { v2 as cloudinary } from "cloudinary";
+
 import connectDB from "@/lib/mongodb";
-import Startup, { IStartup } from "@/database/startup.model";
+import Startup from "@/database/startup.model";
 
-export type StartupResult = { status: "SUCCESS"; startups: IStartup[] } | { status: "SUCCESS"; startup: IStartup } | { status: "ERROR"; error: string } | { status: "NOT FOUND"; startups: [] };
+import { FormState } from "@/components/StartupForm";
+import { formSchema } from "../validation";
+import { getAuthorByEmail } from "./author.actions";
 
-// Make sure Cloudinary is configured somewhere (env vars)
 cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME!,
-    api_key: process.env.CLOUDINARY_API_KEY!,
-    api_secret: process.env.CLOUDINARY_API_SECRET!,
+    cloudinary_url: process.env.CLOUDINARY_URL!
 });
 
-export async function createStartupAction(
-    formData: FormData
-): Promise<StartupResult> {
+type Data = {
+    title: string;
+    description: string;
+    category: string;
+    image: File;
+    pitch: string;
+}
+
+export async function createStartup(
+    data: Data
+): Promise<FormState> {
     try {
         await connectDB();
 
-        // 1) Extract basic fields from the form
-        const title = (formData.get("title") as string)?.trim();
-        const description = (formData.get("description") as string)?.trim();
-        const category = (formData.get("category") as string)?.trim();
-        const pitch = (formData.get("pitch") as string)?.trim();
-        const imageFile = formData.get("image") as File | null;
+        console.log(data);
 
-        if (!title || !description || !category || !pitch) {
-            return { status: "ERROR", error: "Missing required fields" };
+        //It is sure that users have to sign in to get to create a start up pitch
+        const session = await auth();
+
+        const validation = await formSchema.safeParseAsync(data);
+
+        if (!validation.success) {
+            const fieldErrors = validation.error.flatten().fieldErrors;
+
+            const errors: Record<string, string> = {};
+            Object.keys(fieldErrors).forEach((key) => {
+                const errorArray = fieldErrors[key as keyof typeof fieldErrors];
+                if (errorArray && errorArray.length > 0) {
+                    errors[key] = errorArray[0];
+                }
+            });
+
+            return { success: false, error: "Validation failed", errors: errors }
         }
 
-        if (!imageFile || !(imageFile instanceof File)) {
-            return { status: "ERROR", error: "Image file is required" };
-        }
+        const {
+            title,
+            description,
+            category,
+            image,
+            pitch
+        } = validation.data;
 
-        // 2) Convert File -> Buffer for Cloudinary
-        const arrayBuffer = await imageFile.arrayBuffer();
+        //Convert File -> Buffer for Cloudinary
+        const arrayBuffer = await image.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
 
-        // 3) Upload to Cloudinary
+        //Upload to Cloudinary
         const uploadResult = await new Promise<{
             secure_url: string;
         }>((resolve, reject) => {
@@ -55,22 +77,33 @@ export async function createStartupAction(
                 .end(buffer);
         });
 
-        // 4) Create startup document in MongoDB
-        const createdStartup = await Startup.create({
+        //Get user details
+        const response = await getAuthorByEmail(session?.user?.email as string);
+        if (!(response.status === "SUCCESS")) {
+            return { success: false, error: "Server errors when retrieving the author details", errors: {} }
+        }
+
+        const user = response.authors[0];
+
+        //Create startup document in MongoDB
+        await Startup.create({
             title,
             description,
             category,
             pitch,
             image: uploadResult.secure_url,
+            author: user.name,
+            authorEmail: user.email,
+            authorId: user._id
         });
 
-        return { status: "SUCCESS", startup: createdStartup as IStartup };
+        return { success: true, error: "", errors: {} };
     } catch (err) {
-        console.error("createStartupAction error:", err);
         return {
-            status: "ERROR",
+            success: false,
             error:
                 err instanceof Error ? err.message : "An unexpected error occurred while creating startup",
+            errors: {}
         };
     }
 }

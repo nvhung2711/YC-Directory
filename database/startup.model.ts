@@ -52,7 +52,8 @@ const StartupSchema = new Schema<IStartup>({
     },
     views: {
         type: Number,
-        required: true
+        required: true,
+        default: 0
     },
     description: {
         type: String,

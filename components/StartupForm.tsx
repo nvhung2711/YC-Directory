@@ -1,104 +1,167 @@
 "use client";
 
-import { useState, useActionState } from "react";
+import { useState, useEffect, useActionState } from "react";
+import { useRouter } from "next/navigation";
+
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import MDEditor from "@uiw/react-md-editor";
 import { Button } from "@/components/ui/button";
 import { Send } from "lucide-react";
-import { formSchema } from "@/lib/validation";
-import { z, ZodError } from "zod";
 import { toast } from "sonner";
-// import { useRouter } from "next/navigation";
-// import { createPitch } from "@/lib/actions";
+import MDEditor from "@uiw/react-md-editor";
 
-type FormValues = z.infer<typeof formSchema>;
-type FieldErrors = z.ZodFormattedError<FormValues>;
+import { formSchema } from "@/lib/validation";
+
+import { createStartup } from "@/lib/actions/startup.actions";
+
+export type FormState = {
+    error: string;
+    errors: Record<string, string>;
+    success: boolean;
+}
 
 const StartupForm = () => {
+    const router = useRouter();
+
+    const initialState = {
+        error: "",
+        errors: {},
+        success: false
+    };
+
+    const [formData, setFormData] = useState({
+        title: "",
+        description: "",
+        category: "",
+        pitch: ""
+    });
+
     const [errors, setErrors] = useState<Record<string, string>>({});
-    const [pitch, setPitch] = useState("");
+    const [state, formAction, isPending] = useActionState(handleFormSubmit, initialState);
 
-    const handleFormSubmit = async (prevState: any, formData: FormData) => {
+    useEffect(() => {
+        // Update errors from state
+        if (state.errors) {
+            setTimeout(() => {
+                setErrors(state.errors);
+            }, 0);
+        }
+
+        // Show error toast
+        if (state.error && !state.success) {
+            toast.error(state.error);
+        }
+
+        // Show success toast and navigate
+        if (state.success) {
+            toast.success("Startup created successfully!");
+
+            // Navigate
+            router.push('/');
+        }
+    }, [state, router]);
+
+    async function handleFormSubmit(prevState: FormState, formData: FormData) {
         try {
-            setErrors({});
-
             const formValues = {
                 title: formData.get("title") as string,
                 description: formData.get("description") as string,
                 category: formData.get("category") as string,
                 image: formData.get("image") as File,
-                pitch
+                pitch: formData.get("pitch") as string,
             }
 
-            const result = await formSchema.safeParseAsync(formValues);
+            const validation = await formSchema.safeParseAsync(formValues);
 
-            if (!result.success) {
-                const fieldErrors = result.error.flatten().fieldErrors as FieldErrors;
-                console.log(result.error.flatten())
+            if (!validation.success) {
+                const fieldErrors = validation.error.flatten().fieldErrors;
 
-                setErrors({
-                    title: fieldErrors.title?.[0] ?? "",
-                    description: fieldErrors.description?.[0] ?? "",
-                    category: fieldErrors.category?.[0] ?? "",
-                    pitch: fieldErrors.pitch?.[0] ?? "",
+                // Convert to Record<string, string>
+                const errors: Record<string, string> = {};
+                Object.keys(fieldErrors).forEach((key) => {
+                    const errorArray = fieldErrors[key as keyof typeof fieldErrors];
+                    if (errorArray && errorArray.length > 0) {
+                        errors[key] = errorArray[0];
+                    }
                 });
 
-                return { ...prevState, status: "ERROR" };
+                return {
+                    error: "Validation failed",
+                    errors: errors,
+                    success: false
+                };
+            } else {
+                //Save the data to the database
+                const response = await createStartup(validation.data);
+
+                if (!response.success) {
+                    return {
+                        error: response.error,
+                        errors: response.errors,
+                        success: false
+                    }
+                }
+
+                return {
+                    error: "",
+                    errors: {},
+                    success: true
+                }
             }
-
-            toast.success("Form is valid");
-
-            // const result = await createIdea(prevState, formData, pitch);
         } catch (error) {
-            if (error instanceof ZodError) {
-                const fieldErrors = error.flatten().fieldErrors as FieldErrors;
-
-                setErrors({
-                    title: fieldErrors.title?.[0] ?? "",
-                    description: fieldErrors.description?.[0] ?? "",
-                    category: fieldErrors.category?.[0] ?? "",
-                    pitch: fieldErrors.pitch?.[0] ?? "",
-                });
-
-                toast.error("Please check your inputs and try again");
-                return { ...prevState, error: "Validation failed", status: "ERROR" };
-            }
-
-            toast.error("An unexpected error has occurred");
+            console.error("Form submission error:", error);
 
             return {
-                ...prevState,
-                error: "An unexpected error has occurred",
-                status: "ERROR",
+                error: "Something went wrong",
+                errors: {},
+                success: false
             };
         }
     }
-
-    const [state, formAction, isPending] = useActionState(handleFormSubmit, {
-        error: "",
-        status: "INITIAL",
-    });
 
     return (
         <form action={formAction} className="startup-form">
             <div>
                 <label htmlFor="title" className="startup-form_label">Title</label>
-                <Input id="title" name="title" className="startup-form_input" required placeholder="Startup Title" />
+                <Input
+                    id="title"
+                    name="title"
+                    className="startup-form_input"
+                    required
+                    placeholder="Startup Title"
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                />
 
                 {errors.title && <p className="startup-form_error">{errors.title}</p>}
             </div>
 
             <div>
                 <label htmlFor="description" className="startup-form_label">Description</label>
-                <Textarea id="description" name="description" className="startup-form_textarea" required placeholder="Startup Description" />
+                <Textarea
+                    id="description"
+                    name="description"
+                    className="startup-form_textarea"
+                    required
+                    placeholder="Startup Description"
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                />
 
                 {errors.description && <p className="startup-form_error">{errors.description}</p>}
             </div>
 
             <div>
                 <label htmlFor="category" className="startup-form_label">Category</label>
-                <Input id="category" name="category" className="startup-form_input" required placeholder="Startup Category (Tech, Health, Education, ...)" />
+                <Input
+                    id="category"
+                    name="category"
+                    className="startup-form_input"
+                    required
+                    placeholder="Startup Category (Tech, Health, Education, ...)"
+                    value={formData.category}
+                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                />
 
                 {errors.category && <p className="startup-form_error">{errors.category}</p>}
             </div>
@@ -112,7 +175,8 @@ const StartupForm = () => {
 
             <div data-color-mode="light">
                 <label htmlFor="pitch" className="startup-form_label">Pitch</label>
-                <MDEditor value={pitch} onChange={(value) => setPitch(value as string)} id="pitch" preview="edit" height={300} style={{ borderRadius: 20, overflow: "hidden" }} textareaProps={{
+                <Input id="pitch" name="pitch" className="startup-form_input hidden" required value={formData.pitch} onChange={(e) => setFormData({ ...formData, pitch: e.target.value })} />
+                <MDEditor value={formData.pitch} onChange={(value) => setFormData({ ...formData, pitch: value as string })} id="pitch" preview="edit" height={300} style={{ borderRadius: 20, overflow: "hidden" }} textareaProps={{
                     placeholder:
                         "Briefly describe your idea and what problem it solves",
                 }}
