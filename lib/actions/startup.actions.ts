@@ -176,7 +176,12 @@ export const getStartupsBySlug = async (slug: string) => {
     try {
         await connectDB();
 
-        const startups = await Startup.findOneAndUpdate({ slug: slug }, { $inc: { views: 1 } });
+        // Increment views and return the updated document so the UI shows the latest count
+        const startups = await Startup.findOneAndUpdate(
+            { slug: slug },
+            { $inc: { views: 1 } },
+            { new: true }
+        );
 
         if (!startups)
             return { status: "NOT FOUND" }

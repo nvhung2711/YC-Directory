@@ -7,7 +7,6 @@ import Image from "next/image";
 import markdownit from "markdown-it";
 import { Skeleton } from "@/components/ui/skeleton";
 import View from "@/components/View";
-// import StartupCard, { StartupTypeCard } from "@/components/StartupCard";
 import { getStartupsBySlug } from "@/lib/actions/startup.actions";
 import { getAuthorById } from "@/lib/actions/author.actions";
 
@@ -89,20 +88,6 @@ const Page = async ({ params }: { params: Promise<{ slug: string }> }) => {
                         <p className="no-result">No details provided</p>
                     )}
                 </div>
-
-                <hr className="divider" />
-
-                {/* {editorPosts?.length > 0 && (
-                    <div className="max-w-4xl mx-auto">
-                        <p className="text-30-semibold">Editor Picks</p>
-
-                        <ul className="mt-7 card_grid-sm">
-                            {editorPosts.map((post: StartupTypeCard, i: number) => (
-                                <StartupCard key={i} post={post} />
-                            ))}
-                        </ul>
-                    </div>
-                )} */}
 
                 <Suspense fallback={<Skeleton className="view_skeleton" />}>
                     <View views={post.views} />
