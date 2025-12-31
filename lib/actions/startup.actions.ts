@@ -176,7 +176,7 @@ export const getStartupsBySlug = async (slug: string) => {
     try {
         await connectDB();
 
-        const startups = await Startup.find({ slug: slug });
+        const startups = await Startup.findOneAndUpdate({ slug: slug }, { $inc: { views: 1 } });
 
         if (!startups)
             return { status: "NOT FOUND" }
@@ -184,5 +184,25 @@ export const getStartupsBySlug = async (slug: string) => {
         return { status: "SUCCESS", startups: startups };
     } catch (err) {
         return { status: "ERROR", error: err instanceof Error ? err.message : "Unknown" }
+    }
+}
+
+export const getStartupsById = async (id: mongoose.Types.ObjectId) => {
+    try {
+        await connectDB();
+
+        // Increment the views count each time a startup detail page is rendered
+        const startups = await Startup.findByIdAndUpdate(
+            id,
+            { $inc: { views: 1 } },
+            { new: true }
+        );
+
+        if (!startups)
+            return { status: "NOT FOUND" };
+
+        return { status: "SUCCESS", startups: [startups] };
+    } catch (err) {
+        return { status: "ERROR", error: err instanceof Error ? err.message : "Unknown" };
     }
 }

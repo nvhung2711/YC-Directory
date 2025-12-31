@@ -7,11 +7,7 @@ import Author, { IAuthor } from "@/database/author.model";
 
 export type AuthorResult = { status: "SUCCESS"; authors: IAuthor[] } | { status: "ERROR"; error: string } | { status: "NOT FOUND" };
 
-export const getAuthorById = async (id: string): Promise<AuthorResult> => {
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-        return { status: "NOT FOUND" }
-    }
-
+export const getAuthorById = async (id: mongoose.Types.ObjectId): Promise<AuthorResult> => {
     try {
         await connectDB();
 

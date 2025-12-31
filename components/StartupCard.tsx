@@ -4,10 +4,13 @@ import Link from "next/link"
 import Image from "next/image"
 import { Button } from "./ui/button"
 import { IStartup } from "@/database/startup.model"
+import { IAuthor } from "@/database/author.model"
 import { Skeleton } from "./ui/skeleton"
 
+export type StartupTypeCard = Omit<IStartup, "author"> & { author?: IAuthor };
+
 const StartupCard = ({ post }: { post: IStartup }) => {
-    const { createdAt, views, author, authorId, title, category, _id, image, description } = post;
+    const { createdAt, views, author, authorId, title, category, slug, image, description } = post;
 
     return (
         <li className="startup-card group">
@@ -28,7 +31,7 @@ const StartupCard = ({ post }: { post: IStartup }) => {
                         <p className="text-16-medium line-clamp-1">{author}</p>
                     </Link>
 
-                    <Link href={`/startup/${_id}`}>
+                    <Link href={`/startup/${slug}`}>
                         <h3 className="text-26-semibold line-clamp-1">{title}</h3>
                     </Link>
                 </div>
@@ -38,7 +41,7 @@ const StartupCard = ({ post }: { post: IStartup }) => {
                 </Link>
             </div>
 
-            <Link href={`/startup/${_id}`}>
+            <Link href={`/startup/${slug}`}>
                 <p className="startup-card_desc">
                     {description}
                 </p>
@@ -51,7 +54,7 @@ const StartupCard = ({ post }: { post: IStartup }) => {
                     <p className="text-16-medium">{category}</p>
                 </Link>
                 <Button className="startup-card_btn" asChild>
-                    <Link href={`/startup/${_id}`}>
+                    <Link href={`/startup/${slug}`}>
                         Details
                     </Link>
                 </Button>
